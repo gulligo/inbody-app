@@ -40,10 +40,8 @@ svg{width:100%;height:auto;display:block}
 <header><div class="top"><span>InBody</span><button onclick="setup()">⚙</button></div>
 <nav><button data-t="dash" onclick="T='dash';render()">대시보드</button><button data-t="detail" onclick="T='detail';render()">상세</button><button data-t="change" onclick="T='change';render()">변화</button><button data-t="photos" onclick="T='photos';render()">결과지</button></nav></header>
 <main id="M"></main><button id="fab" onclick="add()">+</button>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script>
 const ITEMS=[["score","인바디점수","점"],["bmr","기초대사량","kcal"],["weight","체중","kg"],["smm","골격근량","kg"],["fat","체지방량","kg"],["bmi","BMI","kg/m²"],["pbf","체지방률","%"],["whr","복부지방률",""],["vfa","내장지방단면적","cm²"],["water","체수분","kg"],["protein","단백질","kg"]];
-const RE={score:/점수/,bmr:/기초\s*대사량?/,weight:/체\s*중/,smm:/골격근량?/,fat:/체지방량/,bmi:/BMI/i,pbf:/체지방률/,whr:/복부\s*지방률/,vfa:/내장\s*지방/,water:/체수분/,protein:/단백질/};
 const COL={ok:"#46b898",high:"#f25c73",low:"#5b8def",none:"#9aa"},LAB={ok:"표준",high:"표준이상",low:"표준이하",none:"범위없음"};
 let S={recs:[],ranges:{}};try{S=JSON.parse(localStorage.ib)||S}catch(e){}
 let T="dash",DK="weight",DI=null,P=0,SEL={};
@@ -103,7 +101,8 @@ function view(i){
 async function del(id){if(!confirm("이 기록을 삭제할까요?"))return;S.recs=S.recs.filter(r=>r.id!=id);await idb("del",id);DI=null;save();render()}
 
 async function shrink(f){const b=await createImageBitmap(f),s=Math.min(1,1600/Math.max(b.width,b.height)),c=document.createElement("canvas");c.width=b.width*s;c.height=b.height*s;c.getContext("2d").drawImage(b,0,0,c.width,c.height);return new Promise(r=>c.toBlob(r,"image/jpeg",.8))}
-function parse(t){const o={};for(const k in RE){const m=t.match(new RegExp(RE[k].source+"[^0-9]{0,15}(\\d+[.,]?\\d*)","i"));if(m)o[k]=parseFloat(m[1].replace(",","."))}return o}
+function parse(t){const o={};t.replace(/([a-z]+)\s*[=:]\s*([0-9T:\-.]+)/gi,(m,k,v)=>{k=k.toLowerCase();if(k=="date")o.date=v;else if(ITEMS.some(x=>x[0]==k)&&!isNaN(parseFloat(v)))o[k]=parseFloat(v)})
+ return o}
 const prev=k=>{for(let i=S.recs.length-1;i>=0;i--)if(S.recs[i].v[k]!=null)return S.recs[i].v[k]};
 function chk(){ITEMS.forEach(([k])=>{const e=$("in_"+k),p=prev(k),v=parseFloat(e.value.replace(",","."));
  $("pr_"+k).textContent=p!=null?"이전 "+p:"";e.parentNode.classList.toggle("warn",p!=null&&!isNaN(v)&&Math.abs(v-p)/p>.05)})}
@@ -111,15 +110,11 @@ function chk(){ITEMS.forEach(([k])=>{const e=$("in_"+k),p=prev(k),v=parseFloat(e
 function add(){
  let blob=null;const d=document.createElement("div");d.className="modal";
  const now=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);
- d.innerHTML=`<h3>기록 추가</h3><p style="margin:10px 0"><input type="file" accept="image/*" id="f"></p><img id="pv" style="width:100%;display:none;border-radius:12px"><p id="sv" style="margin:8px 0;color:#666"></p><p>날짜 <input type="datetime-local" id="dt" value="${now}"></p>${ITEMS.map(([k,n,u])=>`<label class="f">${n} ${u}<em id="pr_${k}"></em><input id="in_${k}" inputmode="decimal" oninput="chk()"></label>`).join("")}<p style="margin-top:14px"><button class="btn" id="ok">저장</button><button class="btn g" id="no">취소</button></p>`;
+ d.innerHTML=`<h3>기록 추가</h3><p style="margin:10px 0"><input type="file" accept="image/*" id="f"></p><img id="pv" style="width:100%;display:none;border-radius:12px"><textarea id="tx" rows="3" placeholder="채팅에서 받은 한 줄을 여기에 붙여넣으세요" style="width:100%;padding:9px;border:1px solid #ccc;border-radius:8px;font-size:15px;margin-top:10px"></textarea><p style="margin:8px 0"><button class="btn" id="fill">붙여넣은 값 채우기</button></p><p id="sv" style="margin:8px 0;color:#666"></p><p>날짜 <input type="datetime-local" id="dt" value="${now}"></p>${ITEMS.map(([k,n,u])=>`<label class="f">${n} ${u}<em id="pr_${k}"></em><input id="in_${k}" inputmode="decimal" oninput="chk()"></label>`).join("")}<p style="margin-top:14px"><button class="btn" id="ok">저장</button><button class="btn g" id="no">취소</button></p>`;
  document.body.append(d);chk();
  $("no").onclick=()=>d.remove();
- $("f").onchange=async e=>{const f=e.target.files[0];if(!f)return;blob=await shrink(f);$("pv").src=URL.createObjectURL(blob);$("pv").style.display="block";
-  $("sv").textContent="숫자를 읽는 중입니다 (처음에는 한글 데이터를 받느라 오래 걸릴 수 있습니다)...";
-  try{const {data}=await Tesseract.recognize(blob,"kor+eng"),o=parse(data.text);let n=0;
-   for(const k in o){$("in_"+k).value=o[k];n++}chk();
-   $("sv").textContent=n?`${n}개 항목을 읽었습니다. 빨간 칸은 이전과 차이가 큽니다. 틀린 값은 수정해 주세요.`:"숫자를 읽지 못했습니다. 직접 입력해 주세요."}
-  catch(err){$("sv").textContent="자동 읽기에 실패했습니다. 직접 입력해 주세요."}};
+ $("f").onchange=async e=>{const f=e.target.files[0];if(!f)return;blob=await shrink(f);$("pv").src=URL.createObjectURL(blob);$("pv").style.display="block"};
+ $("fill").onclick=()=>{const o=parse($("tx").value);let n=0;for(const k in o){if(k=="date"){$("dt").value=o.date.length==10?o.date+"T12:00":o.date;continue}$("in_"+k).value=o[k];n++}chk();$("sv").textContent=n?n+"개 항목을 채웠습니다. 빨간 칸은 이전과 차이가 큽니다. 확인해 주세요.":"붙여넣은 내용에서 값을 찾지 못했습니다."};
  $("ok").onclick=async()=>{const v={};ITEMS.forEach(([k])=>{const x=parseFloat($("in_"+k).value.replace(",","."));if(!isNaN(x))v[k]=x});
   if(!Object.keys(v).length)return alert("값을 하나 이상 입력해 주세요");
   const id=Date.now();if(blob)await idb("put",id,blob);S.recs.push({id,t:$("dt").value,v});save();d.remove();DI=null;render()}}
