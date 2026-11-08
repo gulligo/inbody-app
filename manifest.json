@@ -1,25 +1,15 @@
-
 {
-  "id": "inbody-app",
   "name": "영영이 인바디",
   "short_name": "영영이 인바디",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "./",
   "display": "standalone",
-  "background_color": "#adc3d7",
+  "background_color": "#ffffff",
   "theme_color": "#ffffff",
   "icons": [
     {
       "src": "icon.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-maskable.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "type": "image/png"
     }
   ]
 }
