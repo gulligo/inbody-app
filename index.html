@@ -49,6 +49,11 @@ svg{width:100%;height:auto;display:block}
 const ITEMS=[["score","인바디점수","점"],["weight","체중","kg"],["smm","골격근량","kg"],["fatmass","체지방","kg"],["pbf","체지방률","%"],["bmi","BMI","kg/m²"],["whr","복부지방률",""],["vfl","내장지방레벨",""],["water","체수분","L"],["protein","단백질","kg"],["mineral","무기질","kg"],["ffm","제지방량","kg"],["bmr","기초대사량","kcal"],["obesity","비만도","%"],["kcal","권장섭취열량","kcal"],["idealw","적정체중","kg"],["wctl","체중조절","kg"],["fctl","지방조절","kg"],["mctl","근육조절","kg"]];
 const COL={ok:"#46b898",high:"#f25c73",low:"#5b8def",none:"#9aa"},LAB={ok:"표준",high:"표준이상",low:"표준이하",none:"범위없음"};
 let S={recs:[],ranges:{water:[28.1,34.3],protein:[7.6,9.2],mineral:[2.6,3.18],fatmass:[11.0,17.6],weight:[46.8,63.4],ffm:[38.2,46.7],bmr:[1129,1298],obesity:[90,110],whr:[0.75,0.85],bmi:[18.5,25],pbf:[18,28]}};try{S=JSON.parse(localStorage.ibw)||S}catch(e){}
+const SEED=[
+{id:1,t:"2026-05-16T19:03",v:{score:76,water:31.2,protein:8.4,mineral:2.81,fatmass:8.3,weight:50.7,smm:23.2,bmi:19.3,pbf:16.3,whr:0.78,vfl:3,ffm:42.4,bmr:1287,obesity:92,kcal:1885,idealw:55.1,wctl:4.4,fctl:4.4,mctl:0}},
+{id:2,t:"2026-06-14T14:49",v:{score:75,water:31.2,protein:8.4,mineral:2.91,fatmass:7.9,weight:50.4,smm:23.2,bmi:19.2,pbf:15.7,whr:0.77,vfl:3,ffm:42.5,bmr:1288,obesity:91,kcal:1889,idealw:55.1,wctl:4.7,fctl:4.7,mctl:0}},
+{id:3,t:"2026-08-15T15:34",v:{score:76,water:31.0,protein:8.3,mineral:2.81,fatmass:8.6,weight:50.7,smm:23.0,bmi:19.3,pbf:16.9,whr:0.77,vfl:3,ffm:42.1,bmr:1280,obesity:92,kcal:1892,idealw:55.1,wctl:4.4,fctl:4.1,mctl:0.3}}];
+if(!S.seeded&&!S.recs.length){S.recs=SEED;S.seeded=1}
 let T="dash",DK="weight",DI=null,P=0,SEL={};
 const M=document.getElementById("M"),$=id=>document.getElementById(id);
 const save=()=>{S.recs.sort((a,b)=>a.t<b.t?-1:1);try{localStorage.ibw=JSON.stringify(S)}catch(e){alert("저장 공간이 부족합니다")}};
