@@ -25,6 +25,11 @@ main{padding:12px}
 .box h3{font-size:15px;margin-bottom:6px}
 .tip{display:inline-block;background:#eef0f4;border-radius:8px;padding:6px 10px;font-size:14px;margin-bottom:4px}
 svg{width:100%;height:auto;display:block}
+.row{display:flex;gap:14px;align-items:center;padding:12px 0;border-top:1px solid #eee}.row:first-of-type{border-top:0}
+.lt{width:118px;flex:none}.rt{flex:1;min-width:0}
+.dl{display:inline-block;background:#eef0f4;border-radius:6px;padding:2px 8px;font-size:12px;color:#555;margin-top:2px}
+.trk{position:relative;height:12px;background:#e4e6ea;border-radius:6px;overflow:hidden}.trk i{position:absolute;left:0;top:0;bottom:0;border-radius:6px}.trk s{position:absolute;top:0;bottom:0;width:2px;background:#fff}
+.zl{display:flex;font-size:10px;color:#999;margin-top:4px}.zl span{flex:1;text-align:center}
 .bar{position:relative;height:10px;background:#e4e6ea;border-radius:5px;margin:10px 0 2px}
 .bar i{position:absolute;top:0;bottom:0;background:#46b898;border-radius:5px}
 .bar u{position:absolute;top:-4px;width:4px;height:18px;background:#222;border-radius:2px}
@@ -65,18 +70,29 @@ const st=(k,v)=>{const r=S.ranges[k];if(!r||r[0]==null||r[1]==null||v==null)retu
 const EMPTY='<div class="box">오른쪽 아래 + 버튼으로 첫 인바디 사진을 올려 주세요.</div>';
 const pick=(k,i)=>{SEL[k]=i;render()};
 
+function nice(a,b){const raw=(b-a)/3,p=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/p,st=(f<=1?1:f<=2?2:f<=5?5:10)*p,t=[];for(let v=Math.ceil(a/st-1e-9)*st;v<=b+1e-9;v+=st)t.push(+v.toFixed(6));return[t,st]}
+function curve(P){const n=P.length;if(n<2)return"";if(n==2)return`M${P[0][0]},${P[0][1]}L${P[1][0]},${P[1][1]}`;
+ const d=[],m=[];for(let i=0;i<n-1;i++)d[i]=(P[i+1][1]-P[i][1])/(P[i+1][0]-P[i][0]);
+ m[0]=d[0];m[n-1]=d[n-2];for(let i=1;i<n-1;i++)m[i]=d[i-1]*d[i]<=0?0:(d[i-1]+d[i])/2;
+ for(let i=0;i<n-1;i++){if(d[i]==0){m[i]=0;m[i+1]=0}else{const a=m[i]/d[i],b=m[i+1]/d[i],q=a*a+b*b;if(q>9){const t=3/Math.sqrt(q);m[i]=t*a*d[i];m[i+1]=t*b*d[i]}}}
+ let o=`M${P[0][0]},${P[0][1]}`;for(let i=0;i<n-1;i++){const dx=(P[i+1][0]-P[i][0])/3;o+=`C${P[i][0]+dx},${P[i][1]+m[i]*dx} ${P[i+1][0]-dx},${P[i+1][1]-m[i+1]*dx} ${P[i+1][0]},${P[i+1][1]}`}return o}
 function chart(k,recs){
  const it=ITEMS.find(x=>x[0]==k),pts=recs.filter(r=>r.v[k]!=null);if(!pts.length)return"";
- const W=340,H=150,px=26,py=24,vs=pts.map(r=>r.v[k]);let a=Math.min(...vs),b=Math.max(...vs);if(a==b){a-=1;b+=1}
- const X=i=>pts.length==1?W/2:px+i*(W-2*px)/(pts.length-1),Y=v=>H-py-(v-a)/(b-a)*(H-2*py);
+ const L=16,R=282,T0=22,B0=128,vs=pts.map(r=>r.v[k]);let a=Math.min(...vs),b=Math.max(...vs);
+ if(a==b){const d=Math.abs(a)*.03||1;a-=d;b+=d}const pad=(b-a)*.18;a-=pad;b+=pad;
+ const X=i=>pts.length==1?(L+R)/2:L+i*(R-L)/(pts.length-1),Y=v=>B0-(v-a)/(b-a)*(B0-T0);
+ const [tk,stp]=nice(a,b),dc=stp>=1?0:stp>=.1?1:2;
  const s=Math.min(SEL[k]??pts.length-1,pts.length-1);
- let g=`<line x1="${X(s)}" y1="4" x2="${X(s)}" y2="${H-6}" stroke="#bbb" stroke-dasharray="4"/><path d="${pts.map((r,i)=>(i?"L":"M")+X(i)+","+Y(r.v[k])).join("")}" fill="none" stroke="#d5d8de" stroke-width="3"/>`;
+ let g="";
+ tk.forEach(t=>{const y=Y(t);g+=`<line x1="${L-6}" y1="${y}" x2="${R+8}" y2="${y}" stroke="#d8dbe0" stroke-dasharray="2 4"/><text x="${R+14}" y="${y+4}" font-size="11" fill="#9aa0a8">${t.toFixed(dc)}</text>`});
+ g+=`<line x1="${X(s)}" y1="8" x2="${X(s)}" y2="${B0+8}" stroke="#b8bcc4" stroke-dasharray="4 3"/>`;
+ g+=`<path d="${curve(pts.map((r,i)=>[X(i),Y(r.v[k])]))}" fill="none" stroke="#d5d8de" stroke-width="3.5" stroke-linecap="round"/>`;
  pts.forEach((r,i)=>{const v=r.v[k],x=X(i),y=Y(v);
   g+=`<circle cx="${x}" cy="${y}" r="5" fill="${COL[st(k,v)]}"/>`;
   if(pts.length<=8)g+=`<text x="${x}" y="${y-10}" font-size="10" font-weight="700" text-anchor="middle">${v}</text>`;
-  if(pts.length<=6||i==0||i==pts.length-1)g+=`<text x="${x}" y="${H+8}" font-size="9" fill="#888" text-anchor="middle">${r.t.slice(2,10).replace(/-/g,".")}</text>`;
+  if(pts.length<=6||i==0||i==pts.length-1)g+=`<text x="${x}" y="${B0+26}" font-size="10" fill="#8a8f98" text-anchor="middle">${r.t.slice(2,10).replace(/-/g,".")}</text>`;
   g+=`<circle cx="${x}" cy="${y}" r="16" fill="transparent" onclick="pick('${k}',${i})"/>`});
- return`<div class="tip">${fmt(pts[s].t)} <b>${pts[s].v[k]}${it[2]}</b></div><svg viewBox="0 0 340 160">${g}</svg>`}
+ return`<div class="tip">${fmt(pts[s].t)} <b>${pts[s].v[k]}${it[2]}</b></div><svg viewBox="0 0 340 162">${g}</svg>`}
 
 function dash(){
  if(!S.recs.length)return EMPTY;const l=S.recs[S.recs.length-1];
@@ -84,13 +100,18 @@ function dash(){
   return`<button class="card ${DK==k?"on":""}" onclick="DK='${k}';render()"><small>${it[1]} (${it[2]})</small><b>${v??"-"}</b><span class="badge ${s}">${LAB[s]}</span></button>`}).join("");
  return`<div class="cards">${cards}</div><div class="box"><h3>${ITEMS.find(x=>x[0]==DK)[1]}</h3>${chart(DK,S.recs)}</div>`}
 
+const GROUPS=[["골격근·지방분석",["weight","smm","fatmass","ffm"]],["비만 분석",["bmi","pbf","obesity"]],["복부비만 분석",["whr","vfl"]],["체수분 분석",["water","protein","mineral"]],["종합분석",["bmr","kcal"]],["체중조절",["idealw","wctl","fctl","mctl"]]];
+const dec=x=>(String(x).split(".")[1]||"").length;
+function delta(k,i){const v=S.recs[i].v[k];if(v==null)return"";for(let j=i-1;j>=0;j--){const p=S.recs[j].v[k];if(p!=null){const d=v-p,n=Math.max(dec(v),dec(p));return`<span class="dl">${Math.abs(d)<1e-9?"0":(d>0?"+":"")+d.toFixed(n)}</span>`}}return""}
+function row(k,r,i){const it=ITEMS.find(x=>x[0]==k),v=r.v[k];if(!it||v==null)return"";const s=st(k,v),g=S.ranges[k];let rt="";
+ if(s!="none"){const sp=g[1]-g[0]||1,a=g[0]-sp,b=g[1]+sp,w=Math.max(3,Math.min(100,(v-a)/(b-a)*100));
+  rt=`<div class="trk"><i style="width:${w}%;background:${COL[s]}"></i><s style="left:33.33%"></s><s style="left:66.66%"></s></div><div class="zl"><span>표준이하</span><span>표준</span><span>표준이상</span></div>`}
+ return`<div class="row"><div class="lt"><div style="font-size:14px">${it[1]}</div><div><b style="font-size:24px">${v}</b> <small>${it[2]}</small></div>${delta(k,i)}</div><div class="rt">${rt}</div></div>`}
 function detail(){
  if(!S.recs.length)return EMPTY;DI=Math.min(DI??S.recs.length-1,S.recs.length-1);const r=S.recs[DI];
- let h=`<div class="box" style="display:flex;justify-content:space-between;align-items:center"><button onclick="DI=Math.max(0,DI-1);render()">‹</button><b>${fmt(r.t)}</b><button onclick="DI=Math.min(S.recs.length-1,DI+1);render()">›</button></div>`;
- ITEMS.forEach(([k,n,u])=>{const v=r.v[k];if(v==null)return;const s=st(k,v),g=S.ranges[k];let bar="";
-  if(s!="none"){const sp=g[1]-g[0]||1,a=g[0]-sp,b=g[1]+sp,c=x=>Math.max(0,Math.min(100,(x-a)/(b-a)*100));
-   bar=`<div class="bar"><i style="left:${c(g[0])}%;width:${c(g[1])-c(g[0])}%"></i><u style="left:${c(v)}%"></u></div>`}
-  h+=`<div class="box"><div style="display:flex;justify-content:space-between"><span>${n}</span><span class="badge ${s}">${LAB[s]}</span></div><b style="font-size:22px">${v}</b> ${u}${bar}</div>`});
+ let h=`<div class="box" style="display:flex;justify-content:space-between;align-items:center"><button onclick="DI=Math.max(0,DI-1);render()" style="font-size:22px;padding:0 12px">‹</button><b>${fmt(r.t)}</b><button onclick="DI=Math.min(S.recs.length-1,DI+1);render()" style="font-size:22px;padding:0 12px">›</button></div>`;
+ if(r.v.score!=null)h+=`<div class="box" style="display:flex;justify-content:space-between;align-items:center"><span>인바디점수 ${delta("score",DI)}</span><b style="font-size:30px">${r.v.score}<small style="font-size:14px"> 점</small></b></div>`;
+ GROUPS.forEach(([t,ks])=>{const rows=ks.map(k=>row(k,r,DI)).join("");if(rows)h+=`<div class="box"><h3>${t}</h3>${rows}</div>`});
  h+=`<div class="box"><h3>인바디 결과지 원문</h3><img data-id="${r.id}" onclick="view(${DI})"><p style="margin-top:10px"><button class="badge none" onclick="del(${r.id})">이 기록 삭제</button></p></div>`;return h}
 
 function change(){
@@ -131,10 +152,24 @@ function add(){
 
 function setup(){
  const d=document.createElement("div");d.className="modal";
- d.innerHTML=`<h3>표준 범위 설정</h3><p style="color:#666;margin:6px 0">인바디 결과지에 나온 표준 범위(최소~최대)를 한 번만 입력하세요.</p>${ITEMS.map(([k,n,u])=>{const r=S.ranges[k]||[];return`<label class="f">${n} ${u}<div style="display:flex;gap:8px"><input id="a_${k}" inputmode="decimal" placeholder="최소" value="${r[0]??""}"><input id="b_${k}" inputmode="decimal" placeholder="최대" value="${r[1]??""}"></div></label>`}).join("")}<h3 style="margin-top:22px">기록 일괄 불러오기</h3><p style="color:#666;margin:6px 0">한 줄에 기록 하나씩 붙여넣으세요.</p><textarea id="bulk" rows="6" style="width:100%;padding:9px;border:1px solid #ccc;border-radius:8px;font-size:14px"></textarea><p style="margin:8px 0"><button class="btn" id="bk">불러오기</button></p><p style="margin-top:14px"><button class="btn" id="ok">저장</button><button class="btn g" id="no">취소</button></p>`;
+ d.innerHTML=`<h3>표준 범위 설정</h3><p style="color:#666;margin:6px 0">인바디 결과지에 나온 표준 범위(최소~최대)를 한 번만 입력하세요.</p>${ITEMS.map(([k,n,u])=>{const r=S.ranges[k]||[];return`<label class="f">${n} ${u}<div style="display:flex;gap:8px"><input id="a_${k}" inputmode="decimal" placeholder="최소" value="${r[0]??""}"><input id="b_${k}" inputmode="decimal" placeholder="최대" value="${r[1]??""}"></div></label>`}).join("")}<h3 style="margin-top:22px">기록 일괄 불러오기</h3><p style="color:#666;margin:6px 0">한 줄에 기록 하나씩 붙여넣으세요.</p><textarea id="bulk" rows="6" style="width:100%;padding:9px;border:1px solid #ccc;border-radius:8px;font-size:14px"></textarea><p style="margin:8px 0"><button class="btn" id="bk">불러오기</button></p><h3 style="margin-top:22px">백업 / 복원</h3><p style="color:#666;margin:6px 0">기록, 표준 범위, 결과지 사진을 파일 하나로 저장합니다. 가끔 저장해 두세요.</p><p style="margin:8px 0"><button class="btn" id="bu">백업 파일 저장</button></p><p style="margin:8px 0;color:#666">백업 파일에서 복원</p><input type="file" accept=".json,application/json" id="rf"><p style="margin-top:14px"><button class="btn" id="ok">저장</button><button class="btn g" id="no">취소</button></p>`;
  document.body.append(d);$("no").onclick=()=>d.remove();
+ $("bu").onclick=backup;$("rf").onchange=e=>restore(e.target.files[0],d);
  $("bk").onclick=()=>{let n=0;$("bulk").value.split("\n").forEach((l,i)=>{const o=parse(l);if(!o.date)return;const t=o.date.length==10?o.date+"T12:00":o.date;delete o.date;if(!Object.keys(o).length||S.recs.some(r=>r.t==t))return;S.recs.push({id:Date.now()+i,t,v:o});n++});save();d.remove();DI=null;render();alert(n+"건을 불러왔습니다")};
  $("ok").onclick=()=>{ITEMS.forEach(([k])=>{const a=parseFloat($("a_"+k).value.replace(",",".")),b=parseFloat($("b_"+k).value.replace(",","."));if(isNaN(a)||isNaN(b))delete S.ranges[k];else S.ranges[k]=[a,b]});save();d.remove();render()}}
+
+async function backup(){
+ try{const o={v:1,ranges:S.ranges,recs:S.recs,photos:{}};
+  for(const r of S.recs){const b=await idb("get",r.id);if(b)o.photos[r.id]=await new Promise(res=>{const f=new FileReader();f.onload=()=>res(f.result);f.readAsDataURL(b)})}
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(o)],{type:"application/json"}));
+  a.download="inbody-backup-"+new Date().toISOString().slice(0,10)+".json";document.body.append(a);a.click();a.remove();
+  alert("백업 파일을 저장했습니다. 다운로드 폴더를 확인하세요.")}catch(e){alert("백업에 실패했습니다")}}
+async function restore(f,d){
+ if(!f)return;try{const o=JSON.parse(await f.text());let n=0;
+  for(const r of o.recs||[]){if(S.recs.some(x=>x.t==r.t))continue;S.recs.push(r);n++;
+   const p=o.photos&&o.photos[r.id];if(p){const b=await (await fetch(p)).blob();await idb("put",r.id,b)}}
+  Object.assign(S.ranges,o.ranges||{});S.seeded=1;save();d.remove();DI=null;render();alert(n+"건을 복원했습니다")}
+ catch(e){alert("복원에 실패했습니다. 백업 파일이 맞는지 확인하세요")}}
 
 function render(){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t==T));M.innerHTML={dash,detail,change,photos}[T]();hydrate()}
 render();
