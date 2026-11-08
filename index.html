@@ -89,24 +89,26 @@ function chart(k,recs){
  g+=`<path d="${curve(pts.map((r,i)=>[X(i),Y(r.v[k])]))}" fill="none" stroke="#d5d8de" stroke-width="3.5" stroke-linecap="round"/>`;
  pts.forEach((r,i)=>{const v=r.v[k],x=X(i),y=Y(v);
   g+=`<circle cx="${x}" cy="${y}" r="5" fill="${COL[st(k,v)]}"/>`;
-  if(pts.length<=8)g+=`<text x="${x}" y="${y-10}" font-size="10" font-weight="700" text-anchor="middle">${v}</text>`;
+  if(pts.length<=8)g+=`<text x="${x}" y="${y-10}" font-size="10" font-weight="700" text-anchor="middle">${F(k,v)}</text>`;
   if(pts.length<=6||i==0||i==pts.length-1)g+=`<text x="${x}" y="${B0+26}" font-size="10" fill="#8a8f98" text-anchor="middle">${r.t.slice(2,10).replace(/-/g,".")}</text>`;
   g+=`<circle cx="${x}" cy="${y}" r="16" fill="transparent" onclick="pick('${k}',${i})"/>`});
- return`<div class="tip">${fmt(pts[s].t)} <b>${pts[s].v[k]}${it[2]}</b></div><svg viewBox="0 0 340 162">${g}</svg>`}
+ return`<div class="tip">${fmt(pts[s].t)} <b>${F(k,pts[s].v[k])}${it[2]}</b></div><svg viewBox="0 0 340 162">${g}</svg>`}
 
 function dash(){
  if(!S.recs.length)return EMPTY;const l=S.recs[S.recs.length-1];
  const cards=["weight","smm","pbf"].map(k=>{const it=ITEMS.find(x=>x[0]==k),v=l.v[k],s=st(k,v);
-  return`<button class="card ${DK==k?"on":""}" onclick="DK='${k}';render()"><small>${it[1]} (${it[2]})</small><b>${v??"-"}</b><span class="badge ${s}">${LAB[s]}</span></button>`}).join("");
+  return`<button class="card ${DK==k?"on":""}" onclick="DK='${k}';render()"><small>${it[1]} (${it[2]})</small><b>${F(k,v)}</b><span class="badge ${s}">${LAB[s]}</span></button>`}).join("");
  return`<div class="cards">${cards}</div><div class="box"><h3>${ITEMS.find(x=>x[0]==DK)[1]}</h3>${chart(DK,S.recs)}</div>`}
 
+const DEC={score:0,weight:1,smm:1,fatmass:1,pbf:1,bmi:1,whr:2,vfl:0,water:1,protein:1,mineral:2,ffm:1,bmr:0,obesity:0,kcal:0,idealw:1,wctl:1,fctl:1,mctl:1};
+const F=(k,v)=>v==null?"-":DEC[k]!=null?(+v).toFixed(DEC[k]):v;
 const GROUPS=[["골격근·지방분석",["weight","smm","fatmass","ffm"]],["비만 분석",["bmi","pbf","obesity"]],["복부비만 분석",["whr","vfl"]],["체수분 분석",["water","protein","mineral"]],["종합분석",["bmr","kcal"]],["체중조절",["idealw","wctl","fctl","mctl"]]];
 const dec=x=>(String(x).split(".")[1]||"").length;
-function delta(k,i){const v=S.recs[i].v[k];if(v==null)return"";for(let j=i-1;j>=0;j--){const p=S.recs[j].v[k];if(p!=null){const d=v-p,n=Math.max(dec(v),dec(p));return`<span class="dl">${Math.abs(d)<1e-9?"0":(d>0?"+":"")+d.toFixed(n)}</span>`}}return""}
+function delta(k,i){const v=S.recs[i].v[k];if(v==null)return"";for(let j=i-1;j>=0;j--){const p=S.recs[j].v[k];if(p!=null){const d=v-p,n=DEC[k]??Math.max(dec(v),dec(p));return`<span class="dl">${Math.abs(d)<1e-9?"0":(d>0?"+":"")+d.toFixed(n)}</span>`}}return""}
 function row(k,r,i){const it=ITEMS.find(x=>x[0]==k),v=r.v[k];if(!it||v==null)return"";const s=st(k,v),g=S.ranges[k];let rt="";
  if(s!="none"){const sp=g[1]-g[0]||1,a=g[0]-sp,b=g[1]+sp,w=Math.max(3,Math.min(100,(v-a)/(b-a)*100));
   rt=`<div class="trk"><i style="width:${w}%;background:${COL[s]}"></i><s style="left:33.33%"></s><s style="left:66.66%"></s></div><div class="zl"><span>표준이하</span><span>표준</span><span>표준이상</span></div>`}
- return`<div class="row"><div class="lt"><div style="font-size:14px">${it[1]}</div><div><b style="font-size:24px">${v}</b> <small>${it[2]}</small></div>${delta(k,i)}</div><div class="rt">${rt}</div></div>`}
+ return`<div class="row"><div class="lt"><div style="font-size:14px">${it[1]}</div><div><b style="font-size:24px">${F(k,v)}</b> <small>${it[2]}</small></div>${delta(k,i)}</div><div class="rt">${rt}</div></div>`}
 function detail(){
  if(!S.recs.length)return EMPTY;DI=Math.min(DI??S.recs.length-1,S.recs.length-1);const r=S.recs[DI];
  let h=`<div class="box" style="display:flex;justify-content:space-between;align-items:center"><button onclick="DI=Math.max(0,DI-1);render()" style="font-size:22px;padding:0 12px">‹</button><b>${fmt(r.t)}</b><button onclick="DI=Math.min(S.recs.length-1,DI+1);render()" style="font-size:22px;padding:0 12px">›</button></div>`;
