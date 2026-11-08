@@ -2,7 +2,10 @@
 <html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>영영이 인바디</title>
-<link rel="manifest" href="manifest.json" />
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="theme-color" content="#ffffff">
 <style>
 *{box-sizing:border-box;margin:0}
 body{font-family:-apple-system,"Noto Sans KR",sans-serif;background:#f6f6f6;color:#222;padding-bottom:90px}
@@ -50,7 +53,7 @@ const M=document.getElementById("M"),$=id=>document.getElementById(id);
 const save=()=>{S.recs.sort((a,b)=>a.t<b.t?-1:1);try{localStorage.ib=JSON.stringify(S)}catch(e){alert("저장 공간이 부족합니다")}};
 const DB=new Promise(r=>{const q=indexedDB.open("ib",1);q.onupgradeneeded=()=>q.result.createObjectStore("p");q.onsuccess=()=>r(q.result)});
 const idb=async(m,k,v)=>{const d=await DB;return new Promise(r=>{const s=d.transaction("p",m=="get"?"readonly":"readwrite").objectStore("p");const q=m=="get"?s.get(k):m=="put"?s.put(v,k):s.delete(k);q.onsuccess=()=>r(q.result)})};
-const hydrate=()=>document.querySelectorAll("img[data-id]").forEach(async im=>{const b=await idb("get",+im.dataset.id);if(b)im.src=URL.createObjectURL(b)});
+const hydrate=()=>document.querySelectorAll("img[data-id]").forEach(async im=>{const b=await idb("get",+im.dataset.id);if(b)im.src=URL.createObjectURL(b);else im.outerHTML='<span style="color:#999;font-size:13px">사진 없음</span>'});
 const fmt=t=>t.slice(2,16).replace("T"," ").replace(/-/g,".");
 const st=(k,v)=>{const r=S.ranges[k];if(!r||r[0]==null||r[1]==null||v==null)return"none";return v<r[0]?"low":v>r[1]?"high":"ok"};
 const EMPTY='<div class="box">오른쪽 아래 + 버튼으로 첫 인바디 사진을 올려 주세요.</div>';
@@ -122,8 +125,9 @@ function add(){
 
 function setup(){
  const d=document.createElement("div");d.className="modal";
- d.innerHTML=`<h3>표준 범위 설정</h3><p style="color:#666;margin:6px 0">인바디 결과지에 나온 표준 범위(최소~최대)를 한 번만 입력하세요.</p>${ITEMS.map(([k,n,u])=>{const r=S.ranges[k]||[];return`<label class="f">${n} ${u}<div style="display:flex;gap:8px"><input id="a_${k}" inputmode="decimal" placeholder="최소" value="${r[0]??""}"><input id="b_${k}" inputmode="decimal" placeholder="최대" value="${r[1]??""}"></div></label>`}).join("")}<p style="margin-top:14px"><button class="btn" id="ok">저장</button><button class="btn g" id="no">취소</button></p>`;
+ d.innerHTML=`<h3>표준 범위 설정</h3><p style="color:#666;margin:6px 0">인바디 결과지에 나온 표준 범위(최소~최대)를 한 번만 입력하세요.</p>${ITEMS.map(([k,n,u])=>{const r=S.ranges[k]||[];return`<label class="f">${n} ${u}<div style="display:flex;gap:8px"><input id="a_${k}" inputmode="decimal" placeholder="최소" value="${r[0]??""}"><input id="b_${k}" inputmode="decimal" placeholder="최대" value="${r[1]??""}"></div></label>`}).join("")}<h3 style="margin-top:22px">기록 일괄 불러오기</h3><p style="color:#666;margin:6px 0">한 줄에 기록 하나씩 붙여넣으세요.</p><textarea id="bulk" rows="6" style="width:100%;padding:9px;border:1px solid #ccc;border-radius:8px;font-size:14px"></textarea><p style="margin:8px 0"><button class="btn" id="bk">불러오기</button></p><p style="margin-top:14px"><button class="btn" id="ok">저장</button><button class="btn g" id="no">취소</button></p>`;
  document.body.append(d);$("no").onclick=()=>d.remove();
+ $("bk").onclick=()=>{let n=0;$("bulk").value.split("\n").forEach((l,i)=>{const o=parse(l);if(!o.date)return;const t=o.date.length==10?o.date+"T12:00":o.date;delete o.date;if(!Object.keys(o).length||S.recs.some(r=>r.t==t))return;S.recs.push({id:Date.now()+i,t,v:o});n++});save();d.remove();DI=null;render();alert(n+"건을 불러왔습니다")};
  $("ok").onclick=()=>{ITEMS.forEach(([k])=>{const a=parseFloat($("a_"+k).value.replace(",",".")),b=parseFloat($("b_"+k).value.replace(",","."));if(isNaN(a)||isNaN(b))delete S.ranges[k];else S.ranges[k]=[a,b]});save();d.remove();render()}}
 
 function render(){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t==T));M.innerHTML={dash,detail,change,photos}[T]();hydrate()}
